@@ -1,0 +1,9 @@
+sudo timedatectl set-local-rtc true
+sudo apt purge ubuntu-web-launchers
+
+sudo apt instal miredo
+
+hexo:
+git not found        npm install hexo-deployer-git –save
+
+ssh root@$IP
