@@ -1,6 +1,6 @@
 # FLASK NOTE
 
-## Virtual environment
+## Virtual environment(`DEPRECATED`)
 
 ### Create an environment
 
@@ -12,6 +12,9 @@ python3 -m venv venv
 ### Activate the environment
 
 ` . venv/bin/activate `
+
+## Pipenv
+包管理
 
 ## Run the application
 
