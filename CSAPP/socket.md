@@ -1,4 +1,4 @@
-### 地址数据结构
+## 地址数据结构
 
 ```c
 #include <arpa/inet.h>
@@ -6,46 +6,44 @@ struct in_addr {
     uint32_t s_addr;
 }
 ```
-
 存储网络字节序的地址
 
-### 地址转换方法
+## 地址转换方法
+1. 转换字节序
 
-` uint32_t htonl(uint32_t hostlong)` 
+`uint32_t htonl(uint32_t hostlong)` 
 
-` uint16_t htonl(uint16_t hostshort) `
+`uint16_t htons(uint16_t hostshort)`
 
-` uint32_t ntohl(uint32_t hostlong) `
+`uint32_t ntohl(uint32_t hostlong)`
 
-转换字节序
+`uint16_t ntohs(uint16_t hostshort)`
+
+host to network，在主机与网络的字节序之间转换
 
 
-
+2. IP地址与点分十进制字符串之间的转化
 ```c
 int inet_pton(AF_INET, CONST char *src, void *dst);
+// 成功返回1， src非法返回0， 出错-1
 ```
 
-将十进制IP地址表示转换成二进制网络序
+将点分十进制IP地址字符串表示转换成二进制网络序
 
-成功返回1， src非法返回0， 出错-1
-
-示例 ：` inet_pton(AF_INET, buf, &in_addr) ` 
-
+示例 ：`inet_pton(AF_INET, buf, &in_addr)` 
 
 
 ```c
 const char *inet_ntop(AF_INET, const void *src, void *dst, socketlen_t size);
+// 成功返回字符串表示指针，失败NULL
 ```
 
 将网络序IP地址转换为十进制字符串表示
 
-成功返回字符串表示指针，失败NULL
-
-示例：` inet_ntop(AF_INET, &in_addr, buf, sizeof(buf)) `
+示例：`inet_ntop(AF_INET, &in_addr, buf, sizeof(buf))`
 
 
-
-### 套接字数据结构
+## 套接字地址结构
 
 ```c
 /* IP socket address structure */
@@ -67,7 +65,7 @@ struct sockaddr {
 
 为了兼容各种套接字地址结构，定义套接字函数要求指向通用socketaddr结构的指针（当时没有通用的void *指针），然后将应用程序与协议特定的结构的指针强制转化为通用结构。一般定义` typedef struct sockaddr SA ` 来用。
 
-### 套接字方法
+## 套接字方法
 
 ```c
 #include <sys/types.h>
@@ -94,7 +92,7 @@ int connect(int clientfd, const struct sockaddr *addr, socklen_t addrlen);
 
 成功返回0，出错返回-1。
 
-connect函数会一直阻塞知道连接成功或者发生错误。成功就准备好读写了。
+connect函数会一直阻塞直到连接成功或者发生错误。成功就准备好读写了。
 
 addrlen是sizeof(sockaddr_in)。
 
@@ -178,7 +176,7 @@ getaddrinfo函数将主机名、主机地址、服务名和端口号的字符串
 
 host：可以使域名也可以是数字地址（点分十进制IP地址），可为NULL。
 
-service：可以使服务名也可以是十进制端口号
+service：可以是服务名也可以是十进制端口号
 
 hints：可选参数，只能设置ai_family，ai_socktype，ai_protocol，和ai_flags。其他必须为0（或者NULL）实际中经常memset清零。
 
