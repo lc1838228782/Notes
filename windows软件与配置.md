@@ -1,6 +1,6 @@
 ### Typora
 
-Vue主题
+Vue主题，Misty Light Windows
 
 ### VSCode
 
