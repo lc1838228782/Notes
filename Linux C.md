@@ -24,5 +24,15 @@ struct complex_struct {
   struct complex_struct z1 = { .y = 4.0 }; /* z1.x=0.0, z1.y=4.0 */
   ```
 
-- 结构体赋值是深拷贝，无论是初始化，还是后续赋值
+  ```c
+  struct segment {
+  	struct complex_struct start;
+  	struct complex_struct end;
+  };  //嵌套结构体初始化
+  
+  struct segment s = {{ 1.0, 2.0 }, { 4.0, 6.0 }};
+  struct segment s = { 1.0, 2.0, 4.0, 6.0 };
+  struct segment s = { .start.x = 1.0, .end.x = 2.0 };
+  ```
 
+- 结构体赋值是深拷贝，无论是初始化，还是后续赋值

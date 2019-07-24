@@ -3,6 +3,10 @@
 Vue主题，Misty Light Windows
 
 ### VSCode
+- Atom One Light Theme
+- Better Comments
+- Bracket Pair Colorizer 2
+- gitlens
 
 ### 火绒杀毒
 
@@ -17,4 +21,10 @@ Vue主题，Misty Light Windows
 ### Chrome
 
 ### ICloud
+
+### IDM
+
+### QBittorrent
+
+
 
