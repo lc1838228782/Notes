@@ -1,5 +1,7 @@
 ## qemu
 
+`sudo ln -s /usr/bin/qemu-system-i386 /usr/bin/qemu`建立软连接
+
 `-qemu -s -S -hda t.img -monitor stdio`
 
 -s：等待gdb连接

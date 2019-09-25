@@ -55,6 +55,8 @@ QMetaObject::Connection connect(const QObject *, PointerToMemberFunction,
 
 下面的`menuBar()`、`toolBar()`和`statusBar()`三个是`QMainWindow`的函数，用于创建并返回菜单栏、工具栏和状态栏。
 
+为什么前面一个是`menuBar()`而现在的是`addToolBar()`呢？因为一个窗口只有一个菜单栏，但是却可能有多个工具栏。
+
 ## [资源文件](https://www.devbean.net/2012/08/qt-study-road-2-resource-files/)
 
 Qt 资源系统是一个跨平台的资源机制，用于将程序运行时所需要的资源以二进制的形式存储于可执行文件内部。如果你的程序需要加载特定的资源（图标、文本翻译等），那么，将其放置在资源文件中，就再也不需要担心这些文件的丢失。也就是说，如果你将资源以资源文件形式存储，它是会**编译到可执行文件内部**。
