@@ -32,3 +32,59 @@
 
 ![program_virtual_address_memory_space](../images/program_virtual_address_memory_space.png)
 
+### brk,sbrk
+
+```c
+#include<unistd.h>
+int brk(void * addr); 
+/* brk调整program break位置，参数为break的新地址。
+brk()成功返回0，失败返回-1
+并设置errno值为ENOMEM */
+
+void * sbrk(intptr_t increment);
+/* sbrk通过increment的正负调整break位置，
+sbrk()成功返回原brk的地址，也就是新分配内存的起始位置，失败返回(void *)-1,
+并设置errno全局变量的值为ENOMEM */
+```
+
+### mmap,munmap
+
+```c
+#incldue<sys/mman.h>
+void * mmap(void * addr, size_t length,int prot,int flags,int fd,off_t offset);
+int munmap(void * addr, size_t length);//addr为mmap函数返回接收的地址，length为请求分配的长度。
+```
+
+```text
+参数：
+
+（1）、addr:
+起始地址，置零让系统自行选择并返回即可.
+（2）、length:
+长度，不够一页会自动凑够一页的整数倍，我们可以宏定义#define MIN_LENGTH_MMAP 4096为一页大小
+（3）、prot:
+读写操作权限，PROT_READ可读、PROT_WRITE可写、PROT_EXEC可执行、PROT_NONE映射区域不能读取。（注意PROT_XXXXX与文件本身的权限不冲突，如果在程序中不设定任何权限，即使本身存在读写权限，该进程也不能对其操作）
+（4）、flags常用标志:
+①MAP_SHARED【share this mapping】、MAP_PRIVATE【Create a private copy-on-write mapping】
+MAP_SHARED只能设置文件共享，不能地址共享，即使设置了共享，对于两个进程来说，也不会生效。而MAP_PRIVATE则对于文件与内存都可以设置为私有。
+②MAP_ANON【Deprecated】、MAP_ANONYMOUS：匿名映射，如果映射地址需要加该参数，如果不加默认映射文件。MAP_ANON已经过时，只需使用MAP_ANONYMOUS即可
+（5）、文件描述符：fd
+（6）、文件描述符偏移量：offset
+（fd和offset对于一般性内存分配来说设置为0即可）
+
+返回值：
+
+失败返回MAP_FAILED，即(void * (-1))并设置errno全局变量。
+成功返回指向mmap area的指针pointer。
+
+常见errno错误：
+
+①ENOMEM：内存不足；
+②EAGAIN：文件被锁住或有太多内存被锁住；
+③EBADF：参数fd不是有效的文件描述符；
+④EACCES：存在权限错误，。如果是MAP_PRIVATE情况下文件必须可读；使用MAP_SHARED则文件必须能写入，且设置prot权限必须为PROT_WRITE。
+⑤EINVAL：参数addr、length或者offset中有不合法参数存在。
+```
+
+![mmap](https://raw.githubusercontent.com/lc1838228782/pics/master/img/mmap.png)
+
