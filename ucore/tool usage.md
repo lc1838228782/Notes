@@ -4,7 +4,7 @@
 
 `-qemu -s -S -hda t.img -monitor stdio`
 
--s：等待gdb连接
+-s：等待gdb连接，到port 1234
 
 -S：在启动时不启动cpu需要在monitor中输入c继续工作
 
