@@ -48,6 +48,8 @@ kern_init(void) {
 
 `kern_init`完成内存管理等操作后，调用`proc_init`，在其中完成了两个内核线程`idleproc`和`initproc`的创建。之后调用了`cpu_idle`完成了首次的内核线程的切换。
 
+### proc_init
+
 ```c
 // file: kern/process/proc.c
 // proc_init - set up the first kernel thread idleproc "idle" by itself and 
@@ -58,7 +60,7 @@ proc_init(void) {
 
     list_init(&proc_list);					// 初始化链接进程PCB和线程TCB的双向链表
     for (i = 0; i < HASH_LIST_SIZE; i ++) {
-        list_init(hash_list + i);			// 为了快速查找，使用了哈希方式，哈希一样的链接在一起
+        list_init(hash_list + i);			// 为了快速查找，使用了哈希，pid哈希一样的链接在一起
     }
 
     if ((idleproc = alloc_proc()) == NULL) {// 分配proc_struct空间并初始化，ucore中TCB和PCB的
@@ -72,7 +74,7 @@ proc_init(void) {
     set_proc_name(idleproc, "idle");
     nr_process ++;
 
-    current = idleproc;						// 设置当前进程(线程)
+    current = idleproc;						// 设置当前运行进程(线程)
 
     int pid = kernel_thread(init_main, "Hello world!!", 0);	// 创建第二个内核线程
     if (pid <= 0) {
@@ -167,18 +169,18 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     if ((proc = alloc_proc()) == NULL) {		// 创建TCB(PCB)
         goto fork_out;
     }
-    proc->parent = current;						// 设置母进程
+    proc->parent = current;						// 设置父进程
 
     if (setup_kstack(proc) != 0) {				// 创建内核栈，每个线程都有自己的栈
         goto bad_fork_cleanup_proc;
     }
-    if (copy_mm(clone_flags, proc) != 0) {		// CLONE_VM指共享程序空间，这里指内核空间
+    if (copy_mm(clone_flags, proc) != 0) {		// CLONE_VM指共享程序空间，这里指共享内核空间
         goto bad_fork_cleanup_kstack;
     }
     copy_thread(proc, stack, tf);				// 设置中断帧和上下文
 
     bool intr_flag;
-    local_intr_save(intr_flag);
+    local_intr_save(intr_flag);					// 设置线程(进程)pid，添加到列表
     {
         proc->pid = get_pid();
         hash_proc(proc);
@@ -187,7 +189,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     }
     local_intr_restore(intr_flag);
     
-    wakeup_proc(proc);
+    wakeup_proc(proc);							// 创建完毕，使其就绪
     ret = proc->pid;
 fork_out:
     return ret;
@@ -200,7 +202,7 @@ bad_fork_cleanup_proc:
 }
 ```
 
-`copy_thread`
+`copy_thread`设置程序调度所需的中断帧(后面详解)，和程序上下文。
 
 ```c
 // copy_thread - setup the trapframe on the  process's kernel stack top and
@@ -209,15 +211,169 @@ static void
 copy_thread(struct proc_struct *proc, uintptr_t esp, struct trapframe *tf) {
     proc->tf = (struct trapframe *)(proc->kstack + KSTACKSIZE) - 1; // 在程序内核栈开始地方分
     																// 配一个trapframe空间
-    *(proc->tf) = *tf;						// 设置程序
+    *(proc->tf) = *tf;						// 设置程序中断帧
     proc->tf->tf_regs.reg_eax = 0;
-    proc->tf->tf_esp = esp;                             // set for user process
-    proc->tf->tf_eflags |= FL_IF;
-
-    proc->context.eip = (uintptr_t)forkret;
-    proc->context.esp = (uintptr_t)(proc->tf);
+    proc->tf->tf_esp = esp;                 // 这句在创建内核栈中没有作用(是为用户进程设置用户栈)
+    proc->tf->tf_eflags |= FL_IF;			// 使能中断
+	
+    // 设置程序执行的上下文，在该内核线程被调度之后，将首先执行forkret函数
+    proc->context.eip = (uintptr_t)forkret;		// 设置调度后的起始执行地址
+    proc->context.esp = (uintptr_t)(proc->tf);	// 设置程序上下文中所利用的堆栈
 }
 ```
 
+### cpu_idle
 
+创建完内核线程`idleproc`，`initproc`。当前运行的内核线程即为`idleproc`，已经设置好该线程`need_resched = 1`。
 
+```c
+void
+cpu_idle(void) {
+    while (1) {
+        if (current->need_resched) {
+            schedule();					// 当检查到当前进程需要调度的时候，就执行schedule
+        }
+    }
+}
+```
+
+`schedule`
+
+```c
+void
+schedule(void) {
+    bool intr_flag;
+    list_entry_t *le, *last;
+    struct proc_struct *next = NULL;
+    local_intr_save(intr_flag);
+    {
+        current->need_resched = 0;
+        last = (current == idleproc) ? &proc_list : &(current->list_link);
+        le = last;
+        do {
+            if ((le = list_next(le)) != &proc_list) {
+                next = le2proc(le, list_link);
+                if (next->state == PROC_RUNNABLE) {			// 顺序查找下一个runnable
+                    break;
+                }
+            }
+        } while (le != last);
+        if (next == NULL || next->state != PROC_RUNNABLE) {
+            next = idleproc;
+        }
+        next->runs ++;
+        if (next != current) {
+            proc_run(next);					// 调用proc_run进行执行上下文的切换
+        }
+    }
+    local_intr_restore(intr_flag);
+}
+```
+
+`proc_run`
+
+```c
+void
+proc_run(struct proc_struct *proc) {
+    if (proc != current) {
+        bool intr_flag;
+        struct proc_struct *prev = current, *next = proc;
+        local_intr_save(intr_flag);
+        {
+            current = proc;
+            load_esp0(next->kstack + KSTACKSIZE);	// 设置TSS中的内核栈，进入内核状态时使用
+            lcr3(next->cr3);						// 加载页表
+            switch_to(&(prev->context), &(next->context));	// 切换上下文
+        }
+        local_intr_restore(intr_flag);
+    }
+}
+```
+
+`switch_to` 
+
+```assembly
+.text
+.globl switch_to
+switch_to:                      # switch_to(from, to)
+
+    # save from's registers
+    movl 4(%esp), %eax          # eax points to from	// 取第一个参数from
+    popl 0(%eax)                # save eip !popl       	// 保存call压栈的函数返回地址
+    movl %esp, 4(%eax)          # save esp::context of from
+    movl %ebx, 8(%eax)          # save ebx::context of from
+    movl %ecx, 12(%eax)         # save ecx::context of from
+    movl %edx, 16(%eax)         # save edx::context of from
+    movl %esi, 20(%eax)         # save esi::context of from
+    movl %edi, 24(%eax)         # save edi::context of from
+    movl %ebp, 28(%eax)         # save ebp::context of from
+
+    # restore to's registers
+    movl 4(%esp), %eax          # not 8(%esp): popped return address already
+                                # eax now points to to
+    movl 28(%eax), %ebp         # restore ebp::context of to
+    movl 24(%eax), %edi         # restore edi::context of to
+    movl 20(%eax), %esi         # restore esi::context of to
+    movl 16(%eax), %edx         # restore edx::context of to
+    movl 12(%eax), %ecx         # restore ecx::context of to
+    movl 8(%eax), %ebx          # restore ebx::context of to
+    movl 4(%eax), %esp          # restore esp::context of to
+
+    pushl 0(%eax)               # push eip			// 压栈EIP，充当ret返回地址
+
+    ret
+```
+
+此处ret使用的EIP是线程context中存储的函数`fortret`地址
+
+`forkret`
+
+```c
+static void
+forkret(void) {
+    forkrets(current->tf);
+}
+```
+
+`forkret`传入中断帧调用`trapentry.S`中的`forkrets`
+
+```assembly
+.globl __trapret
+__trapret:
+    # restore registers from stack
+    popal
+
+    # restore %ds, %es, %fs and %gs
+    popl %gs
+    popl %fs
+    popl %es
+    popl %ds
+
+    # get rid of the trap number and error code
+    addl $0x8, %esp
+    iret
+
+.globl forkrets
+forkrets:
+    # set stack to this new process's trapframe
+    movl 4(%esp), %esp
+    jmp __trapret
+```
+
+`forkrets`利用程序内核栈顶的`struct trapframe`装作从中断处返回到线程(进程)。从终端中返回时就用到了前面`tf.tf_eip = (uint32_t)kernel_thread_entry;`，此后就跳转到了`kernel_thread_entry`执行。
+
+`kernel_thread_entry`中使用的`edx`，`ebx`也都是在tf中存的。
+
+```assembly
+.text
+.globl kernel_thread_entry
+kernel_thread_entry:        # void kernel_thread(void)
+
+    pushl %edx              # push arg				// 压入函数参数，后调用
+    call *%ebx              # call fn
+
+    pushl %eax              # save the return value of fn(arg)			// 返回时，利用返回值
+    call do_exit            # call do_exit to terminate current thread	// 作为参数do_exit
+```
+
+到这里线程就切换成功了。

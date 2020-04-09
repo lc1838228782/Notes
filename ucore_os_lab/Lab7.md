@@ -211,7 +211,4 @@ Hansen管程signal被notify所取代，可解释为：当一个正在管程中�
 
 ![](https://raw.githubusercontent.com/lc1838228782/pics/master/img/monitor_writer.png)![](https://raw.githubusercontent.com/lc1838228782/pics/master/img/monitor_reader.png)
 
-## 实验
-
-
 
