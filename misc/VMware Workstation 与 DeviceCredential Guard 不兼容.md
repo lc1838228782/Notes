@@ -12,3 +12,8 @@ bcdedit /set hypervisorlaunchtype off
 bcdedit /set hypervisorlaunchtype auto
 ```
 
+
+
+**preview版VMware已经可以与hyper v共存**
+
+(似乎性能有所下降

@@ -5,7 +5,7 @@
 4. `npm install hexo --save`在blog文件夹中部署hexo的环境
 5. `npm install`
 
-**备份主题中的uploads，CNAME文件**
+**更换主题时，备份主题中的uploads，CNAME文件**
 
 | 布局    | 路径             |
 | :------ | :--------------- |

@@ -47,3 +47,62 @@ socat TCP4-LISTEN:10001,fork EXEC:./level1
 ```
 
 随后这个程序的IO就被重定向到10001这个端口上了，并且可以使用 nc 127.0.0.1 10001来访问我们的目标程序服务了。
+
+## jz, je
+
+`CMP` **subtracts** the operands and sets the flags. Namely, it sets the zero flag if the difference is zero (operands are equal).
+
+`TEST` sets the zero flag, `ZF`, when the result of the **AND** operation is zero. If two operands are equal, their bitwise AND is zero when both are zero. `TEST` also sets the sign flag, `SF`, when the most significant bit is set in the result, and the parity flag, `PF`, when the number of set bits is even.
+
+`JE` [Jump if Equals] tests the zero flag and jumps if the flag is set. `JE` is an alias of `JZ` [Jump if Zero] so the disassembler cannot select one based on the opcode. `JE` is named such because the zero flag is set if the arguments to `CMP` are equal.
+
+So,
+
+```assembly
+TEST %eax, %eax
+JE   400e77 <phase_1+0x23>
+```
+
+jumps if the `%eax` is zero.
+
+## 为什么ldd，info sharedlibrary显示的地址不一样？
+
+`ldd`
+
+因为一些原因，ldd并不意味着得到准确的地址，使用`LD_TRACE_LOADED_OBJECTS` 
+
+```shell
+$ LD_TRACE_LOADED_OBJECTS=1 /bin/bash | grep libc
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f44dae1b000)
+$ LD_TRACE_LOADED_OBJECTS=1 /bin/bash | grep libc
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f9b35341000)
+$ LD_TRACE_LOADED_OBJECTS=1 /bin/bash | grep libc
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fef18efd000)
+$ echo 0 | sudo tee /proc/sys/kernel/randomize_va_space
+0
+$ LD_TRACE_LOADED_OBJECTS=1 /bin/bash | grep libc
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007ffff75e7000)
+$ LD_TRACE_LOADED_OBJECTS=1 /bin/bash | grep libc
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007ffff75e7000)
+$ LD_TRACE_LOADED_OBJECTS=1 /bin/bash | grep libc
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007ffff75e7000)
+```
+
+`info sharedlibrary` 显示的是.text段地址
+
+
+
+https://reverseengineering.stackexchange.com/questions/6657/why-does-ldd-and-gdb-info-sharedlibrary-show-a-different-library-base-addr
+
+## scanf跳过输入——避免破坏canary
+
+`+` `-` 因为正负数的原因可以当做合法输入，而不破坏输入流
+
+## Linux 连续执行命令
+
+`||` 执行到一个命令成功
+
+`&&` 执行到一个命令失败
+
+`;` 顺序执行
+

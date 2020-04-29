@@ -1,30 +1,52 @@
-### Typora
+## scoop
 
-Vue主题，Misty Light Windows
+在 PowerShell 中输入下面内容，保证允许本地脚本的执行：
 
-### VSCode
+```powershell
+set-executionpolicy remotesigned -scope currentuser
+```
+
+然后执行下面的命令安装 Scoop：
+
+```powershell
+Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+```
+
+or shorter
+
+```powershell
+iwr -useb get.scoop.sh | iex
+```
+
+
+
+## Typora
+
+Vue，Misty Light Windows
+
+## VSCode
 - Atom One Light Theme
 - Better Comments
 - Bracket Pair Colorizer 2
 - gitlens
 
-### 火绒杀毒
+## 火绒杀毒
 
-### BandiZip
+## BandiZip
 
-### Bitvise SSH Client
+## Bitvise SSH Client
 
-### PotPlayer
+## PotPlayer
 
-### Git
+## Git
 
-### Chrome
+## Chrome
 
-### ICloud
+## ICloud
 
-### IDM
+## IDM
 
-### QBittorrent
+## QBittorrent
 
 
 

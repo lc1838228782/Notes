@@ -27,13 +27,27 @@
 
 ## Intermediate ROP
 
+`ret2csu`: 64位中`__libc_csu_init `函数存在特殊的gadget。 **蒸米--level5**
 
+![img](https://ctf-wiki.github.io/ctf-wiki/pwn/linux/stackoverflow/figure/brop_gadget.png)
 
+`ret2reg`: 找`call reg`和`jmp reg`gadget，设置reg处为shellcode地址。
 
+## Advanced ROP
 
-## [Canary 绕过技术](https://ctf-wiki.github.io/ctf-wiki/pwn/linux/mitigation/canary-zh/#gcc-canary)
+`ret2_dl_runtime_resolve`: 构造动态链接过程
+
+## Tricks
+
+### [Canary 绕过技术](https://ctf-wiki.github.io/ctf-wiki/pwn/linux/mitigation/canary-zh/#gcc-canary)
 
 1. Canary以`\x00`结尾，覆盖之后使用一定的方法输出。
 2. one-by-one爆破Canary，一个进程中的各线程和fork创建的子进程中的Canary都是一样的。
 3. 劫持`__stack_chk_fail`函数(ZCTF2017 Login)
 4. 覆盖TLS中储存的Canary值(StarCTF2018 babystack)
+
+### 栈迁移
+
+### stack smash 劫持
+
+### partial overwrite
