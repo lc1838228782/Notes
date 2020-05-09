@@ -450,7 +450,7 @@ thread arena图示(多堆)
 - bins: 这个数组用于保存 unsorted bin、small bins 以及 large bins，共计可容纳 126 个，其中：
 
   - Bin 1: unsorted bin;
-- Bin 2 - 63: small bins;
+  - Bin 2 - 63: small bins;
   - Bin 64 - 126: large bins.
 
 `malloc_state`中的定义
@@ -678,7 +678,7 @@ unsorted bin 可以视为空闲 chunk 回归其所属 bin 之前的缓冲区。
   - 当一个较大的 chunk 被分割成两半后，如果剩下的部分大于 MINSIZE，就会被放到 unsorted bin 中。
   - 释放一个不属于 fast bin 的 chunk，并且该 chunk 不和 top chunk 紧邻时，该 chunk 会被首先放到 unsorted bin 中。关于 top chunk 的解释，请参考下面的介绍。
 
-  此外，Unsorted Bin 在使用的过程中，采用的遍历顺序是 **FIFO** 。
+  此外，Unsorted Bin 在使用的过程中，采用的遍历顺序是 **FIFO**，**头插尾取** 。
 
 ![](https://raw.githubusercontent.com/lc1838228782/pics/master/img/unsortedsmalllarge.png)
 

@@ -1,6 +1,6 @@
 ## 搜索内存
 
-`fine $(canary)`
+`find $(canary)`
 
 ## 系统调用出中断
 

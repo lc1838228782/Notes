@@ -106,3 +106,4 @@ https://reverseengineering.stackexchange.com/questions/6657/why-does-ldd-and-gdb
 
 `;` 顺序执行
 
+`system("*&^%$#@;sh")`
