@@ -1,0 +1,2 @@
+hostname  containername 的在networking中解析
+
