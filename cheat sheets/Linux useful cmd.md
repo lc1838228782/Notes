@@ -4,3 +4,5 @@
 
 `nc(netcat)`：建立TCP和UDP连接并监听
 
+`find grep`: `find . -name "*.[chS]" -exec grep -Hn keyword {} \;`
+

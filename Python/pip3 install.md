@@ -11,7 +11,3 @@ sudo python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.c
 sudo python3 -m pip uninstall pip && sudo apt install python3-pip --reinstall
 ```
 
-pwntools
-
-` python3 -m pip install --upgrade git+https://github.com/Gallopsled/pwntools.git@dev3 --user`
-

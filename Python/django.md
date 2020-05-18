@@ -1,6 +1,6 @@
 # django
 
-创建项目：创建虚拟环境，然后` django-admin startproject mysite `
+创建项目：创建虚拟环境 ` django-admin startproject mysite `
 
 运行服务器：` Python manage.py runserver `
 
