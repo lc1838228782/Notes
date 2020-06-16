@@ -35,7 +35,7 @@ typedef struct
     Elf32_Word st_size;     // Symbol size
     unsigned char st_info;  // Symbol type and binding
     unsigned char st_other; // Symbol visibility under glibc>=2.2
-    Elf32_Section st_shndx; // Section index
+    Elf32_Half st_shndx; // Section index
 } Elf32_Sym;
 ```
 
@@ -47,3 +47,7 @@ typedef struct
 2. 构造fake_sym，st_name存放上述偏移。fake_sym的存放位置需要0x10对齐。计算dynsym与构造sym的偏移，除以0x10，计算索引。
 3. 将索引<<8，或上类型存放到r_info。构造fake_reloc。r_offset为函数的got地址。
 4. 计算fake_reloc与rel.plt的偏移，作为plt0的第二个参数。（相当于在一般函数plt中，第二条指令所push的参数）
+
+## Ref
+
+http://pwn4.fun/2016/11/09/Return-to-dl-resolve/

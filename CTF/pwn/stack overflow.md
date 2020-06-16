@@ -35,7 +35,7 @@
 
 ## Advanced ROP
 
-`ret2_dl_runtime_resolve`: 构造动态链接过程
+`ret2_dl_runtime_resolve`: 构造动态链接过程 **jjj stack**
 
 ## Tricks
 

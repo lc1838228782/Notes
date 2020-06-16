@@ -110,7 +110,7 @@ for arg in reversed(sys.argv[1:]):
     print(arg)
 ```
 
-or `\#!/usr/bin/env python`
+or `#!/usr/bin/env python`
 
 ## Finding files
 

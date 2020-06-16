@@ -519,9 +519,14 @@ Disassembly of section .fini:
    4:	e8 00 00 00 00       	call   9 <_fini+0x9>
    9:	5b                   	pop    %ebx
    a:	81 c3 03 00 00 00    	add    $0x3,%ebx
-$ objdump -d /usr/lib/i386-linux-gnu/crtn.o 
- 
-/usr/lib/i386-linux-gnu/crtn.o:     file format elf32-i386
+
+```
+
+`$ objdump -d /usr/lib/i386-linux-gnu/crtn.o `
+
+```assembly
+
+ /usr/lib/i386-linux-gnu/crtn.o:     file format elf32-i386
  
  
 Disassembly of section .init:
@@ -538,6 +543,8 @@ Disassembly of section .fini:
    3:	5b                   	pop    %ebx
    4:	c3                   	ret
 ```
+
+
 
 回过头来看看helloworld程序反汇编代码中的`_init`，`_fini`函数的组成：
 
@@ -770,6 +777,31 @@ Call pre_fini after main
 3 Self-check
 如果想对main的启动及结束有进一步的理解，最好的方法就亲自读一读glibc的相关源码。
 
+## 执行顺序
 
+
+
+- __libc_csu_init执行.init和.init_array
+- __libc_csu_fini执行.fini和.fini_array
+
+并且执行顺序如下：
+
+- __libc_csu_init
+- main
+- __libc_csu_fini
+
+更细致的说顺序如下：
+
+- .init
+- .init_array[0]
+- .init_array[1]
+- …
+- .init_array[n]
+- main
+- .fini_array[n]
+- …
+- .fini_array[1]
+- .fini_array[0]
+- .fini
 
 https://blog.csdn.net/gary_ygl/article/details/8506007
