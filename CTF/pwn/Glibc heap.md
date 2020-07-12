@@ -637,8 +637,6 @@ ptmalloc 默认情况下会调用 set_max_fast(s) 将全局变量 global_max_fas
  */
 ```
 
-
-
 #### Unsorted bin
 
 当 small chunk 和 large chunk 被 `free` 掉时，它们并非被添加到各自的 bin 中，而是被添加在 「**unsorted bin**」 中。这使得分配器可以重新使用最近 `free` 掉的 chunk，从而消除了寻找合适 bin 的时间开销，进而加速了内存分配及释放的效率。
@@ -661,11 +659,9 @@ unsorted bin 可以视为空闲 chunk 回归其所属 bin 之前的缓冲区。
  */
 ```
 
-
-
 **存疑**  unsorted bin中的chunk`NON_MAIN_ARENA `总是为0。[^4]
 
-> 在内存分配的时候，在前后检索 fast/small bins 未果之后，在特定条件下，会将 unsorted bin 中的 chunks 转移到合适的 bin 中去，small/large。
+
 
 - **数量**：1
 
@@ -743,8 +739,6 @@ smallbin相关宏
                            : (((unsigned) (sz)) >> 3)) +                       \
      SMALLBIN_CORRECTION)
 ```
-
-
 
 #### Large bin
 
@@ -1067,6 +1061,6 @@ static void malloc_printerr(const char *str) {
 [^1]: https://www.gnu.org/software/libc/manual/html_node/The-GNU-Allocator.html
 [^2]:https://sploitfun.wordpress.com/2015/02/10/understanding-glibc-malloc/
 [^3]:https://blog.csdn.net/maokelong95/article/details/51989081
-[^ 4]:https://evilpan.com/2020/04/12/glibc-heap-exp/
-
+[^4]: https://evilpan.com/2020/04/12/glibc-heap-exp/
 [^ 5]: https://ctf-wiki.github.io/ctf-wiki/
+[^4]: 
