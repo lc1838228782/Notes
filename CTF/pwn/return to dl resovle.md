@@ -43,8 +43,8 @@ typedef struct
 
 ## 攻击步骤
 
-1. 首先存放**函数字符串**，计算**dynstr**与**函数字符串的地址**的偏移。
-2. 构造fake_sym，st_name存放上述偏移。fake_sym的存放位置需要0x10对齐。计算dynsym与构造sym的偏移，除以0x10，计算索引。
+1. 首先存放**函数字符串**，计算`.dynstr`与**函数字符串的地址**的偏移。
+2. 构造fake_sym，st_name存放上述偏移。fake_sym的存放位置需要0x10对齐。计算`.dynsym`与fake_sym的偏移，除以0x10，计算索引。
 3. 将索引<<8，或上类型存放到r_info。构造fake_reloc。r_offset为函数的got地址。
 4. 计算fake_reloc与rel.plt的偏移，作为plt0的第二个参数。（相当于在一般函数plt中，第二条指令所push的参数）
 

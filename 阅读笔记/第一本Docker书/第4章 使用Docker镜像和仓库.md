@@ -88,14 +88,14 @@ EXPOSE 80
 
 ```shell
 $ cd static_web
-$ sudo docker build -t="username/repository:tag"
+$ sudo docker build -t="username/repository:tag" .
 ```
 
 从git仓库构建
 
 ```
 $ sudo docker build -t="username/repositoty:tag" \
-  git@github.com:username/repository
+  git@github.com:username/repository . 
 ```
 
 `-f`指定任意名称的dockerfile

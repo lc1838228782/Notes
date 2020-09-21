@@ -108,6 +108,8 @@ https://reverseengineering.stackexchange.com/questions/6657/why-does-ldd-and-gdb
 
 `system("*&^%$#@;sh")`
 
+## 64bit malloc_printerr可以触发malloc_hook
+
 ## Python tips
 
 ### 泄露地址填充
@@ -119,3 +121,7 @@ https://reverseengineering.stackexchange.com/questions/6657/why-does-ldd-and-gdb
 `pack(canary, 32)[::-1].encode('hex')` 将canary打印出来
 
 `unpack('/sh\x00', 32)`
+
+## 禁用本地alarm
+
+为了便于调试。`%s/alarm/isnan/g

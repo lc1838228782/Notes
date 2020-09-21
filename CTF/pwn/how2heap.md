@@ -83,8 +83,6 @@ if (__glibc_unlikely (e->key == tcache))
 }
 ```
 
-# glibc 2.25
-
 ## fastbin_dup_into_stack.c
 
 假设fastbin中通过double free得到以下序列。
@@ -133,7 +131,17 @@ https://github.com/mehQQ/public_writeup/tree/master/hitcon2016/SleepyHolder
 
 ## unsafe unlink
 
-和SleepyHolder一样。。 
+在前块中构造fake_chunk，用一些方法将后块的pre_in_use位清掉，释放后块向前合并。
+
+伪造fake_chunk需要绕过检查，一般用某个指针变量前后的地址当做fd、bk。之后就会将该指针变量就会被覆盖。
+
+```c
+#define unlink(AV, P, BK, FD) {                                            \
+    FD = P->fd;								      \
+    BK = P->bk;								      \
+    if (__builtin_expect (FD->bk != P || BK->fd != P, 0))		      \
+      malloc_printerr (check_action, "corrupted double-linked list", P, AV);  \
+```
 
 how2heap对glibc的版本要求`<2.26`似乎有误？据我测试，**glibc2.31 without tcache也可以运行成功**，只要添加`chunk0_ptr[1] = (uint64_t)malloc_size;`，glibc2.31中看起来只是增加了size的验证。
 
@@ -245,3 +253,117 @@ null byte overflow，strcpy溢出。修改free_got为put_plt，泄露libc base�
 
 UAF，realloc with topchunk
 
+## large bin attack
+
+对已存在于large bin中的chunk的bk、bk_nextsize字段进行更改，在unsorted bin中取出插入该large bin时，会将bk->fd、bk_nextsize->fd_nextsize的位置覆盖成堆的地址。和先前的unsorted bin attack类似，通常为进一步攻击做准备，如修改global_max_fast。
+
+![large bin](https://raw.githubusercontent.com/lc1838228782/pics/master/img/large_bin2.png)
+
+### 0ctf2018 heapstorm2
+
+poison null byte, large  bin attack，fake unsorted bin
+
+## house of einherjar
+
+泄露堆地址，计算fake size。
+
+off-by-one覆盖victim->pre_in_use，修改victim->prev_size。
+
+释放victim，与fake chunk合并。
+
+**victim需要与top chunk临近。**
+
+### Secon2016 tinypad
+
+## house of orange
+
+将`topchunk->size`缩小并对齐页，malloc一个大于size，就会将old top chunk释放到unsorted bin中。
+
+### Hitcon2016 houseoforange
+
+## house of roman
+
+最主要的思想就是partial overwrite，所以能够在不泄露地址的情况下getshell。
+
+需要溢出或者UAF
+
+fast bin attack，partial overwrite fd或者bk指向main_arena的块（从small large unsorted bin中malloc），使其指向`malloc_hook-0x23`
+
+unsorted bin attack，将bk指向malloc_hook-0x10，使得malloc_hook被写入main_arena地址，从而partial overwrite成为system、onegadget等。
+
+## tcache dup
+
+glibc 2.26~2.28
+
+没有任何检查，简单的double free
+
+## tcache poisoning
+
+修改tcache中已释放块的next(fd)到任意位置，然后进行分配得到
+
+## tcache house of spirit
+
+伪造堆块释放到tcahe。和普通house of spirit不同的是，tcache并没有对后块检查
+
+prev_inuse没有影响，IS_MMAPPED、NON_MAIN_ARENA有影响
+
+## house of botcake
+
+double free
+
+[commit](https://sourceware.org/git/?p=glibc.git;a=commit;h=bcdaad21d4635931d1bd3b54a7894276925d081d)在`struct tcache_entry`结构中添加了key变量指向tcache_perthread_struct，所以简单的向tcache中double free两次会被检测到。
+
+```c
+ typedef struct tcache_entry
+ {
+   struct tcache_entry *next;
++  /* This field exists to detect double frees.  */
++  struct tcache_perthread_struct *key;
+ } tcache_entry;
+```
+
+使用把某个大小tcache填满的方式，将victim同时double free到tcache和unsorted bin，并在victim前面准备了了prev块，以使得size不一样，便于分配。
+
+## tcache stashing unlink attack
+
+在tcache中布置5个chunk，对应大小的small bin中布置2个chunk。修改倒数第二个small chunk的bk指向target，target->bk写入一个可写的位置。使用calloc触发，因为calloc调用`_int_malloc`不会使用tcache进行分配（除了遍历unsorted bin的尾部），只会往tcache中填充。
+
+可以造成target->bk->fd位置写入大数字，并且target成为tcache中第一个，再次malloc就可以获得。
+
+有点像fastbin reverse into tcache。
+
+### variation
+
+在tcache中布置6个chunk，对应大小的small bin中布置2个chunk。（可以用unsorted bin切割的方式布置2个small bin）
+
+修改倒数第二个small chunk的bk，calloc触发，只修改bk->fd。
+
+### tips
+
+可以使用分割unsorted bin的方法，得到对应大小small bin，在不必填满tcache的情况下。
+
+### Hitcon2019 one punch
+
+## fastbin reverse into tcache
+
+UAF or overflow
+
+可以达成类似unsorted bin attack的效果，写入一个大的数字到指定地址。（但也可以获得指定地址的chunk。。
+
+chunk size = 0x50
+
+1. 填满tcache。除了victim外，再往fastbin释放1或6个chunk。如果要写入位置存储的数值为0，则1个就可以。如果数值不为0，则需要6个。结构如下
+
+   fast bin 0x50: p1->p2->p3->p4->p5->p6->victim
+
+2. 分配清空tcache
+
+3. 修改victim->fd为"指定地址-0x10"
+
+   fast bin 0x50: p1->p2->p3->p4->p5->p6->victim->target
+
+4. malloc触发，target->fd被覆盖为堆地址。tcache中的结构如下
+
+   tcache 0x50: target->victim->p6->p5->p4->p3->p2
+
+5. 再malloc一次，获得target

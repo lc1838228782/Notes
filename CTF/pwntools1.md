@@ -170,8 +170,8 @@ binsh_address = next(e.search('/bin/sh\x00')) # find address which contains /bin
 asm进行汇编
 
 ```shell
->>> asm('nop')'
-\x90'
+>>> asm('nop; nop')'
+\x90\x90'
 >>> asm('nop', arch='arm')
 '\x00\xf0 \xe3'
 ```

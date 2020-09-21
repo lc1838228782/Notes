@@ -2,13 +2,15 @@
 
 修改apt源为[清华大学源](https://mirrors6.tuna.tsinghua.edu.cn/help/ubuntu/)
 
-安装[vscode](https://code.visualstudio.com/)
+## 安装[vscode](https://code.visualstudio.com/)
 
 ```shell
 $sudo apt install ./code
 ```
 
-修改[pypi源](https://mirrors6.tuna.tsinghua.edu.cn/help/pypi/)
+[GNU global](https://blog.jaycetyle.com/2018/10/vscode-gnu-global/)
+
+## 修改[pypi源](https://mirrors6.tuna.tsinghua.edu.cn/help/pypi/)
 
 ```shell
 $ pip install pip -U
@@ -21,24 +23,7 @@ $ pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 $ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pip -U
 ```
 
-安装[pwntools](https://github.com/Gallopsled/pwntools)
-
-```shell
-$ sudo apt-get update
-$ sudo apt-get install python3 python3-pip python3-dev git libssl-dev libffi-dev build-essential
-$ sudo python3 -m pip install --upgrade pip
-$ sudo python3 -m pip install --upgrade git+https://github.com/Gallopsled/pwntools.git@dev3
-```
-
-安装[LibcSearcher](https://github.com/lieanu/LibcSearcher)
-
-```shell
-$ git clone https://github.com/lieanu/LibcSearcher.git
-$ cd LibcSearcher
-$ python setup.py develop
-```
-
-安装[TLDR](https://tldr.sh/)
+## 安装[TLDR](https://tldr.sh/)
 
 latest: [nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -57,7 +42,7 @@ $ npm install -g tldr
 $ tldr --update
 ```
 
-安装其他
+## 安装其他
 
 ```shell
 $ sudo apt install fd-find
@@ -66,5 +51,47 @@ $ sudo apt install shellcheck
 $ sudo apt install ripgrep
 $ sudo apt install feh
 $ sudo apt install htop
+$ sudo apt install global
+```
+
+# sec tools
+
+## 安装[pwntools](https://github.com/Gallopsled/pwntools)
+
+```shell
+$ sudo apt-get update
+$ sudo apt-get install python3 python3-pip python3-dev git libssl-dev libffi-dev build-essential
+$ sudo python3 -m pip install --upgrade pip
+$ sudo python3 -m pip install --upgrade git+https://github.com/Gallopsled/pwntools.git@dev3
+```
+
+## 安装[LibcSearcher](https://github.com/lieanu/LibcSearcher)
+
+```shell
+$ git clone https://github.com/lieanu/LibcSearcher.git
+$ cd LibcSearcher
+$ python setup.py develop
+$ 
+```
+
+https://github.com/lieanu/LibcSearcher
+
+https://github.com/niklasb/libc-database
+
+## pwndbg
+
+https://github.com/pwndbg/pwndbg
+
+## one_gadget
+
+https://github.com/david942j/one_gadget
+
+```shell
+# 添加 TUNA 源并移除默认源
+$ gem sources --add https://mirrors.tuna.tsinghua.edu.cn/rubygems/ --remove https://rubygems.org/
+# 列出已有源
+$ gem sources -l
+# 应该只有 TUNA 一个
+$ gem install one_gadget
 ```
 

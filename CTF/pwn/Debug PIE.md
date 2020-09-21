@@ -12,9 +12,17 @@ ida远程调试。
 
 ## 3 gdb (>=8.1)
 
-`starti`命令
+`starti`命令，它会停在程序第一条指令执行的地方，对于c程序就是_start函数开始处。
 
 ## 4 gdb (<8.1)
+
+### 4.1 start
+
+当程序未被strip时，start相当于：加入一个main函数的断点，然后run。
+
+当程序被strip后，start会加入一个`_start`的断点据我测试，然后run。
+
+### 4.2 utilize a side-effect
 
 Setting a breakpoint on an unmapped address before starting the target process does this, effectively. It's not correct functionality, but rather a side-effect of the failure to set the breakpoint.
 
@@ -39,5 +47,8 @@ Cannot access memory at address 0x0
 
 ## ref
 
-1. https://reverseengineering.stackexchange.com/questions/8724/set-a-breakpoint-on-gdb-entry-point-for-stripped-pie-binaries-without-disabling
-2. https://blog.csdn.net/Maxmalloc/article/details/86037537
+1. https://sourceware.org/gdb/onlinedocs/gdb/Starting.html
+
+2. https://reverseengineering.stackexchange.com/questions/8724/set-a-breakpoint-on-gdb-entry-point-for-stripped-pie-binaries-without-disabling
+
+3. https://blog.csdn.net/Maxmalloc/article/details/86037537

@@ -746,6 +746,8 @@ smallbin相关宏
 
 large bins 中的每一个 bin 都包含一定范围内的 chunk，其中的 chunk 按 fd_nextsize 指针的顺序**从大到小排列**。相同大小的 chunk 同样按照最近使用顺序排列。
 
+![large bin](https://raw.githubusercontent.com/lc1838228782/pics/master/img/large_bin2.png)
+
 - 数量：63
   - 每个 large bin 都维护着一条 free chunk 的双向循环链表。采用双向链表的原因是，large bins 中的 chunk 可能会从链表中的任意位置插入及删除。
   - 这 63 个 bins
@@ -755,7 +757,7 @@ large bins 中的每一个 bin 都包含一定范围内的 chunk，其中的 chu
     - 4 个 bins 所维护的 chunk 大小以 32768 字节递增；
     - 2 个 bins 所维护的 chunk 大小以 262144 字节递增；
     - 1 个 bin 维护所有剩余 chunk 大小；
-  - 不像 small bin ，large bin 中所有 chunk 大小不一定相同，各 chunk 大小递减保存。最大的 chunk 保存顶端，而最小的 chunk 保存在尾端；
+  - 不像 small bin ，large bin 中所有 chunk 大小不一定相同，各 chunk 大小递减保存。最大的 chunk 保存头端，而最小的 chunk 保存在尾端；
 - 合并 —— 两个相邻的空闲 chunk 会被合并；
 - `malloc(large chunk)`
   - 初始情况下，large bin 都会是 NULL，因此尽管用户请求 large chunk ，提供服务的将是 next largetst bin 路径而不是 large bin 路径 。
@@ -895,7 +897,7 @@ typedef struct tcache_perthread_struct
 
 tcache_entry用于链接空闲的chunk，指针直接**指向chunk的userdata**部分，也就是说复用了指针的含义。
 
-每个线程都会维护一个tcache_prethread_struct，它是整个tcache机制的管理结构，其中包含TCACHE_MAX_BINS个tcache_entry链表。链入其中的chunk大小相同，所以通常也叫做`tcache bin`。其特性如下：
+每个arena都会维护一个tcache_prethread_struct，它是整个tcache机制的管理结构，其中包含TCACHE_MAX_BINS个tcache_entry链表。链入其中的chunk大小相同，所以通常也叫做`tcache bin`。其特性如下：
 
 - 每个tcache bin最多只能有7个(`TCACHE_FILL_COUNT `)chunk
 - tcache bin中chunk的inuse位不会置零，也就是说不会进行合并
@@ -915,7 +917,7 @@ tcache bin一共有64个(`TCACHE_MAX_BINS`)，其大小范围为：
 
 由于tcache的增加和删除非常简洁，因此速度很快，但另一方面这也意味着缺乏各种安全检查和mitigation，在利用时候也格外方便。
 
-
+[commit](https://sourceware.org/git/?p=glibc.git;a=commit;h=bcdaad21d4635931d1bd3b54a7894276925d081d)添加了double free检测。
 
 ## In-depth understanding of ptmalloc2
 
@@ -1007,9 +1009,6 @@ tcache bin一共有64个(`TCACHE_MAX_BINS`)，其大小范围为：
 
 - 这里的头部指的是 bin 的 fd 指向的 chunk，即双向链表中最新加入的 chunk。
 - 这里的尾部指的是 bin 的 bk 指向的 chunk，即双向链表中最先加入的 chunk。
-- **堆的第一个 chunk 所记录的 prev_inuse 位默认为 1。** 头结点
-
-![largebin](https://raw.githubusercontent.com/lc1838228782/pics/master/img/largebin.png)
 
 `malloc_printerr`
 
@@ -1063,4 +1062,3 @@ static void malloc_printerr(const char *str) {
 [^3]:https://blog.csdn.net/maokelong95/article/details/51989081
 [^4]: https://evilpan.com/2020/04/12/glibc-heap-exp/
 [^ 5]: https://ctf-wiki.github.io/ctf-wiki/
-[^4]: 
