@@ -13,3 +13,7 @@ $ objdump -s --section .comment /path/to/binary   # 获取编译信息
 ```
 
 ## od
+
+## hexdump
+
+## xxd
