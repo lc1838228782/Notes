@@ -48,23 +48,6 @@ socat TCP4-LISTEN:10001,fork EXEC:./level1
 
 随后这个程序的IO就被重定向到10001这个端口上了，并且可以使用 nc 127.0.0.1 10001来访问我们的目标程序服务了。
 
-## jz, je
-
-`CMP` **subtracts** the operands and sets the flags. Namely, it sets the zero flag if the difference is zero (operands are equal).
-
-`TEST` sets the zero flag, `ZF`, when the result of the **AND** operation is zero. If two operands are equal, their bitwise AND is zero when both are zero. `TEST` also sets the sign flag, `SF`, when the most significant bit is set in the result, and the parity flag, `PF`, when the number of set bits is even.
-
-`JE` [Jump if Equals] tests the zero flag and jumps if the flag is set. `JE` is an alias of `JZ` [Jump if Zero] so the disassembler cannot select one based on the opcode. `JE` is named such because the zero flag is set if the arguments to `CMP` are equal.
-
-So,
-
-```assembly
-TEST %eax, %eax
-JE   400e77 <phase_1+0x23>
-```
-
-jumps if the `%eax` is zero.
-
 ## 为什么ldd，info sharedlibrary显示的地址不一样？
 
 `ldd`
@@ -125,3 +108,17 @@ https://reverseengineering.stackexchange.com/questions/6657/why-does-ldd-and-gdb
 ## 禁用本地alarm
 
 为了便于调试。`%s/alarm/isnan/g
+
+## 开启core dump
+
+`sudo sh -c "echo '/tmp/core.%t' > /proc/sys/kernel/core_pattern`
+
+开启core dump这个功能。
+
+```shell
+#!bash
+ulimit -c unlimited
+sudo sh -c 'echo "/tmp/core.%t" > /proc/sys/kernel/core_pattern'
+```
+
+开启之后，当出现内存错误的时候，系统会生成一个core dump文件在tmp目录下。然后我们再用gdb查看这个core文件就可以获取到buf真正的地址了。

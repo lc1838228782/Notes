@@ -13,5 +13,21 @@
 | `page`  | `source`         |
 | `draft` | `source/_drafts` |
 
-`npm install hexo-deployer-git –save`
+```shell
+$ npm install hexo-generator-feed --save
+$ npm install hexo-deployer-git --save
+$ npm i hexo-renderer-swig   # hexo 5
+```
+
+
+
+## npm依赖更新
+
+```shell
+$ npm outdated
+$ npm install -g npm-check-updates
+$ ncu
+$ rm node_modules # optional
+$ npm install
+```
 

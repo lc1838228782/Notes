@@ -1,5 +1,3 @@
-# [Heap Overview](https://ctf-wiki.github.io/ctf-wiki/pwn/linux/glibc-heap/heap_overview-zh/)
-
 目前 Linux 标准发行版中使用的堆分配器是 glibc 中的堆分配器：ptmalloc2。ptmalloc2 主要是通过 malloc/free 函数来分配和释放内存块。
 
 需要注意的是，在内存分配与使用的过程中，Linux 有这样的一个基本内存管理思想，**只有当真正访问一个地址的时候，系统才会建立虚拟页面与物理页面的映射关系**。
@@ -857,7 +855,7 @@ large bins 中的每一个 bin 都包含一定范围内的 chunk，其中的 chu
 
 当 top chunk 的大小比用户请求的大小小的时候，top chunk 就通过 `sbrk`（main arena）或 `mmap`（ thread arena）系统调用扩容。
 
-**疑问？**需要注意的是，top chunk 的 prev_inuse 比特位始终为 1，否则其前面的 chunk 就会被合并到 top chunk 中。
+需要注意的是，top chunk 的 prev_inuse 比特位始终为 1，否则其前面的 chunk 就会被合并到 top chunk 中。
 
 #### Last remainder chunk
 
@@ -918,144 +916,6 @@ tcache bin一共有64个(`TCACHE_MAX_BINS`)，其大小范围为：
 由于tcache的增加和删除非常简洁，因此速度很快，但另一方面这也意味着缺乏各种安全检查和mitigation，在利用时候也格外方便。
 
 [commit](https://sourceware.org/git/?p=glibc.git;a=commit;h=bcdaad21d4635931d1bd3b54a7894276925d081d)添加了double free检测。
-
-## In-depth understanding of ptmalloc2
-
-### basic function
-
-`unlink` 用来将一个双向链表（只存储空闲的 chunk）中的一个元素取出来，可能在以下地方使用
-
-- malloc
-  - 从恰好大小合适的 large bin 中获取 chunk。
-    - **这里需要注意的是 fastbin 与 small bin 就没有使用 unlink，这就是为什么漏洞会经常出现在它们这里的原因。**
-    - 依次遍历处理 unsorted bin 时也没有使用 unlink 。
-  - 从比请求的 chunk 所在的 bin 大的 bin 中取 chunk。
-- free
-  - 后向合并，合并物理相邻低地址空闲 chunk。
-  - 前向合并，合并物理相邻高地址空闲 chunk（除了 top chunk）。
-- malloc_consolidate
-  - 后向合并，合并物理相邻低地址空闲 chunk。
-  - 前向合并，合并物理相邻高地址空闲 chunk（除了 top chunk）。
-- realloc
-  - 前向扩展，合并物理相邻高地址空闲 chunk（除了 top chunk）。
-
-由于 unlink 使用非常频繁，所以 unlink 被实现为了一个宏，如下
-
-```c
-/* Take a chunk off a bin list */
-// unlink p
-#define unlink(AV, P, BK, FD) {                                            \
-    // 由于 P 已经在双向链表中，所以有两个地方记录其大小，所以检查一下其大小是否一致。
-    if (__builtin_expect (chunksize(P) != prev_size (next_chunk(P)), 0))      \
-      malloc_printerr ("corrupted size vs. prev_size");               \
-    FD = P->fd;                                                                      \
-    BK = P->bk;                                                                      \
-    // 防止攻击者简单篡改空闲的 chunk 的 fd 与 bk 来实现任意写的效果。
-    if (__builtin_expect (FD->bk != P || BK->fd != P, 0))                      \
-      malloc_printerr (check_action, "corrupted double-linked list", P, AV);  \
-    else {                                                                      \
-        FD->bk = BK;                                                              \
-        BK->fd = FD;                                                              \
-        // 下面主要考虑 P 对应的 nextsize 双向链表的修改
-        if (!in_smallbin_range (chunksize_nomask (P))                              \
-            // 如果P->fd_nextsize为 NULL，表明 P 未插入到 nextsize 链表中。
-            // 那么其实也就没有必要对 nextsize 字段进行修改了。
-            // 这里没有去判断 bk_nextsize 字段，可能会出问题。
-            && __builtin_expect (P->fd_nextsize != NULL, 0)) {                      \
-            // 类似于小的 chunk 的检查思路
-            if (__builtin_expect (P->fd_nextsize->bk_nextsize != P, 0)              \
-                || __builtin_expect (P->bk_nextsize->fd_nextsize != P, 0))    \
-              malloc_printerr (check_action,                                      \
-                               "corrupted double-linked list (not small)",    \
-                               P, AV);                                              \
-            // 这里说明 P 已经在 nextsize 链表中了。
-            // 如果 FD 没有在 nextsize 链表中
-            if (FD->fd_nextsize == NULL) {                                      \
-                // 如果 nextsize 串起来的双链表只有 P 本身，那就直接拿走 P
-                // 令 FD 为 nextsize 串起来的
-                if (P->fd_nextsize == P)                                      \
-                  FD->fd_nextsize = FD->bk_nextsize = FD;                      \
-                else {                                                              \
-                // 否则我们需要将 FD 插入到 nextsize 形成的双链表中
-                    FD->fd_nextsize = P->fd_nextsize;                              \
-                    FD->bk_nextsize = P->bk_nextsize;                              \
-                    P->fd_nextsize->bk_nextsize = FD;                              \
-                    P->bk_nextsize->fd_nextsize = FD;                              \
-                  }                                                              \
-              } else {                                                              \
-                // 如果在的话，直接拿走即可
-                P->fd_nextsize->bk_nextsize = P->bk_nextsize;                      \
-                P->bk_nextsize->fd_nextsize = P->fd_nextsize;                      \
-              }                                                                      \
-          }                                                                      \
-      }                                                                              \
-}
-```
-
-![](https://raw.githubusercontent.com/lc1838228782/pics/master/img/unlink_smallbin_intro.png)
-
-可以看出， **P 最后的 fd 和 bk 指针并没有发生变化**，但是当我们去遍历整个双向链表时，已经遍历不到对应的链表了。这一点没有变化还是很有用处的，因为我们有时候可以使用这个方法来泄漏地址
-
-- libc 地址
-  - P 位于双向链表头部，bk 泄漏
-  - P 位于双向链表尾部，fd 泄漏
-  - 双向链表只包含一个空闲 chunk 时，P 位于双向链表中，fd 和 bk 均可以泄漏
-- 泄漏堆地址，双向链表包含多个空闲 chunk
-  - P 位于双向链表头部，fd 泄漏
-  - P 位于双向链表中，fd 和 bk 均可以泄漏
-  - P 位于双向链表尾部，bk 泄漏
-
-**注意**
-
-- 这里的头部指的是 bin 的 fd 指向的 chunk，即双向链表中最新加入的 chunk。
-- 这里的尾部指的是 bin 的 bk 指向的 chunk，即双向链表中最先加入的 chunk。
-
-`malloc_printerr`
-
-在 glibc malloc 时检测到错误的时候，会调用 `malloc_printerr` 函数。
-
-```
-static void malloc_printerr(const char *str) {
-  __libc_message(do_abort, "%s\n", str);
-  __builtin_unreachable();
-}
-```
-
-主要会调用 `__libc_message` 来执行`abort` 函数，如下
-
-```
-  if ((action & do_abort)) {
-    if ((action & do_backtrace))
-      BEFORE_ABORT(do_abort, written, fd);
-
-    /* Kill the application.  */
-    abort();
-  }
-```
-
-在`abort` 函数里，在 glibc 还是 2.23 版本时，会 fflush stream。
-
-```
-  /* Flush all streams.  We cannot close them now because the user
-     might have registered a handler for SIGABRT.  */
-  if (stage == 1)
-    {
-      ++stage;
-      fflush (NULL);
-    }
-```
-
-### 堆初始化
-
-堆初始化是在用户第一次申请内存时执行 malloc_consolidate 再执行 malloc_init_state 实现的。参看`malloc_state`相关函数。
-
-### 申请内存块
-
-
-
-
-
-
 
 [^1]: https://www.gnu.org/software/libc/manual/html_node/The-GNU-Allocator.html
 [^2]:https://sploitfun.wordpress.com/2015/02/10/understanding-glibc-malloc/

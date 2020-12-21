@@ -10,6 +10,7 @@ $ readelf -d prog			# 查看.dynamic段内容
 ```shell
 $ objdump -s prog			# 详细展开
 $ objdump -s --section .comment /path/to/binary   # 获取编译信息
+$ objdump -d 
 ```
 
 ## od

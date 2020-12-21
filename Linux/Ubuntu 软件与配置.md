@@ -42,6 +42,8 @@ $ npm install -g tldr
 $ tldr --update
 ```
 
+https://docs.npmjs.com/downloading-and-installing-node-js-and-npm#using-a-node-version-manager-to-install-node-js-and-npm
+
 ## 安装其他
 
 ```shell
@@ -93,5 +95,13 @@ $ gem sources --add https://mirrors.tuna.tsinghua.edu.cn/rubygems/ --remove http
 $ gem sources -l
 # 应该只有 TUNA 一个
 $ gem install one_gadget
+```
+
+## ropper
+
+[ropper](https://github.com/sashs/Ropper)
+
+```shell
+$ pip3 install capstone filebytes keystone-engine pyvex ropper 
 ```
 
