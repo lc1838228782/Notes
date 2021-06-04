@@ -32,6 +32,14 @@ apt install php-mysql php-mbstring php-xml php-curl
 php -v
 ```
 
+ubuntu  20.10
+
+```shell
+$ sudo apt install php7.4 php7.4-fpm php7.4-mysql
+```
+
+
+
 ## nginx
 
 `apt install nginx`
